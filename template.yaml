@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  AppnameBeansService:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: "appname-beans-service"
+      StageName: Prod
+      Cors:
+        AllowMethods: "'OPTIONS, POST, GET, PUT, DELETE'"
+        AllowHeaders: "'Content-Type'"
+        AllowOrigin: "'http://localhost:3000'" # replace with frontend app URL
+
+  AppnameBeansFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: com.github.phidescode.JavaDynamoDBService.App::handleRequest
+      Runtime: java17
+      Timeout: 60
+      MemorySize: 512
+      CodeUri: .
+      Policies:
+        - AWSLambdaExecute
+        - SecretsManagerReadWrite
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AppnameBeansTable
+      Events:
+        BeansOptions:
+          Type: Api
+          Properties:
+            Path: /beans
+            Method: OPTIONS
+            RestApiId: !Ref AppnameBeansService
+        GetBean:
+          Type: Api
+          Properties:
+            Path: /beans/{id}
+            Method: GET
+            RestApiId: !Ref AppnameBeansService
+        GetBeans:
+          Type: Api
+          Properties:
+            Path: /beans
+            Method: GET
+            RestApiId: !Ref AppnameBeansService
+        PutBean:
+          Type: Api
+          Properties:
+            Path: /beans
+            Method: POST
+            RestApiId: !Ref AppnameBeansService
+        DeleteBean:
+          Type: Api
+          Properties:
+            Path: /beans/{id}
+            Method: DELETE
+            RestApiId: !Ref AppnameBeansService
+        UpdateBean:
+          Type: Api
+          Properties:
+            Path: /beans/{id}
+            Method: PUT
+            RestApiId: !Ref AppnameBeansService
+    Metadata:
+      BuildMethod: makefile
+
+  AppnameBeansTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: AppnameBeans
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
