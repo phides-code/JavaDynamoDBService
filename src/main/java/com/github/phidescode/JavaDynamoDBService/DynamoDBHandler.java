@@ -13,14 +13,14 @@ import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 
 public class DynamoDBHandler {
 
-    private final String TABLE_NAME = "beans";
+    private final String TABLE_NAME = "AppnameBeans";
     private final DynamoDbAsyncClient dynamoDbClient;
 
     public DynamoDBHandler() {
         dynamoDbClient = DependencyFactory.dynamoDbClient();
     }
 
-    public List<Entity> listEntities() {
+    public List<Entity> listEntities() throws InterruptedException, ExecutionException {
 
         List<Entity> entities = new ArrayList<>();
 
@@ -32,20 +32,16 @@ public class DynamoDBHandler {
 
         ScanResponse scanResponse;
 
-        try {
-            scanResponse = scanResponseFuture.get();
-            List<Map<String, AttributeValue>> items = scanResponse.items();
+        scanResponse = scanResponseFuture.get();
+        List<Map<String, AttributeValue>> items = scanResponse.items();
 
-            for (Map<String, AttributeValue> item : items) {
-                String id = item.get("id").s();
-                String description = item.get("description").s();
-                int quantity = Integer.parseInt(item.get("quantity").n());
+        for (Map<String, AttributeValue> item : items) {
+            String id = item.get("id").s();
+            String description = item.get("description").s();
+            int quantity = Integer.parseInt(item.get("quantity").n());
 
-                Entity entity = new Entity(id, description, quantity);
-                entities.add(entity);
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            Logger.logError("Error during DynamoDB scan", e);
+            Entity entity = new Entity(id, description, quantity);
+            entities.add(entity);
         }
 
         return entities;

@@ -35,4 +35,9 @@ public class Entity {
     public void setQuantity(int quantity) {
         this.quantity = quantity;
     }
+
+    @Override
+    public String toString() {
+        return "Entity{id='" + id + "', description='" + description + "', quantity=" + quantity + '}';
+    }
 }
