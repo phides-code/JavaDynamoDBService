@@ -84,11 +84,11 @@ public class DynamoDBHandler {
 
         DeleteItemRequest deleteItemRequest = DeleteItemRequest.builder()
                 .tableName(TABLE_NAME)
+                .returnValues("ALL_OLD")
                 .key(keyToGet)
                 .build();
 
         CompletableFuture<DeleteItemResponse> deleteItemResponseFuture = dynamoDbClient.deleteItem(deleteItemRequest);
-
         DeleteItemResponse deleteItemResponse = deleteItemResponseFuture.get();
 
         if (deleteItemResponse.attributes() == null || deleteItemResponse.attributes().isEmpty()) {
