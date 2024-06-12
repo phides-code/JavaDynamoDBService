@@ -3,6 +3,7 @@ package com.github.phidescode.JavaDynamoDBService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutionException;
 
 import org.springframework.http.HttpStatus;
@@ -51,8 +52,8 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
                 processPost(request);
             // case "PUT" ->
             //     processPut(request);
-            // case "DELETE" ->
-            //     processDelete(request);
+            case "DELETE" ->
+                processDelete(request);
             case "OPTIONS" ->
                 processOptions();
             default ->
@@ -78,6 +79,8 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
         } catch (InterruptedException | ExecutionException e) {
             Logger.logError("Error during DynamoDB scan: ", e);
             return returnError(HttpStatus.INTERNAL_SERVER_ERROR);
+        } finally {
+            dbHandler.closeDbClient();
         }
     }
 
@@ -95,6 +98,29 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
         } catch (ExecutionException | InterruptedException e) {
             Logger.logError("processPost caught error: ", e);
             return returnError(HttpStatus.INTERNAL_SERVER_ERROR);
+        } finally {
+            dbHandler.closeDbClient();
+        }
+    }
+
+    private APIGatewayProxyResponseEvent processDelete(APIGatewayProxyRequestEvent request) {
+
+        String[] pathSegments = request.getPath().split("/");
+        String id = pathSegments[2];
+
+        try {
+            dbHandler.deleteEntity(id);
+            ResponseStructure responseContent = new ResponseStructure("OK", null);
+            return createResponse(HttpStatus.OK, responseContent);
+
+        } catch (NoSuchElementException e) {
+            Logger.logError("processDelete caught error: ", e);
+            return returnError(HttpStatus.BAD_REQUEST);
+        } catch (InterruptedException | ExecutionException e) {
+            Logger.logError("processDelete caught error: ", e);
+            return returnError(HttpStatus.INTERNAL_SERVER_ERROR);
+        } finally {
+            dbHandler.closeDbClient();
         }
     }
 
@@ -162,11 +188,6 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
     // private APIGatewayProxyResponseEvent processPut(APIGatewayProxyRequestEvent request) {
     //     String path = request.getPath();
     //     String message = String.format("hello world! responding to your PUT at %s", path);
-    //     return createResponse(200, message);
-    // }
-    // private APIGatewayProxyResponseEvent processDelete(APIGatewayProxyRequestEvent request) {
-    //     String path = request.getPath();
-    //     String message = String.format("hello world! responding to your DELETE at %s", path);
     //     return createResponse(200, message);
     // }
 }
