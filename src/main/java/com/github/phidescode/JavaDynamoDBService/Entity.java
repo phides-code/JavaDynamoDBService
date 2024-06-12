@@ -1,15 +1,19 @@
 package com.github.phidescode.JavaDynamoDBService;
 
-public class Entity {
+import java.util.UUID;
+
+public class Entity extends BaseEntity {
 
     private String id;
-    private String description;
-    private int quantity;
 
     public Entity(String id, String description, int quantity) {
+        super(description, quantity);
         this.id = id;
-        this.description = description;
-        this.quantity = quantity;
+    }
+
+    public Entity(BaseEntity newEntity) {
+        super(newEntity.getDescription(), newEntity.getQuantity());
+        this.id = UUID.randomUUID().toString();
     }
 
     public String getId() {
@@ -18,26 +22,5 @@ public class Entity {
 
     public void setId(String id) {
         this.id = id;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public int getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(int quantity) {
-        this.quantity = quantity;
-    }
-
-    @Override
-    public String toString() {
-        return "Entity{id='" + id + "', description='" + description + "', quantity=" + quantity + '}';
     }
 }

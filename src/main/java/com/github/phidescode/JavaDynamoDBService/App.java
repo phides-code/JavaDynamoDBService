@@ -12,6 +12,8 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -27,6 +29,7 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
     private static HashMap<String, String> headers;
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String ORIGIN_URL = "http://localhost:3000";
+    private static final DynamoDBHandler dbHandler = new DynamoDBHandler();
 
     public App() {
         headers = new HashMap<>();
@@ -44,8 +47,8 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
         return switch (httpMethod) {
             case "GET" ->
                 processGet();
-            // case "POST" ->
-            //     processPost(request);
+            case "POST" ->
+                processPost(request);
             // case "PUT" ->
             //     processPut(request);
             // case "DELETE" ->
@@ -66,8 +69,6 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
     }
 
     private APIGatewayProxyResponseEvent processGet() {
-        DynamoDBHandler dbHandler = new DynamoDBHandler();
-
         try {
             List<Entity> entities = dbHandler.listEntities();
 
@@ -78,6 +79,44 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
             Logger.logError("Error during DynamoDB scan: ", e);
             return returnError(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private APIGatewayProxyResponseEvent processPost(APIGatewayProxyRequestEvent request) {
+        try {
+            String requestBody = request.getBody();
+            BaseEntity newEntity = validateRequestBody(requestBody);
+            Entity entity = dbHandler.putEntity(newEntity);
+            ResponseStructure responseContent = new ResponseStructure(entity, null);
+
+            return createResponse(HttpStatus.OK, responseContent);
+        } catch (ClassCastException | JsonProcessingException e) {
+            Logger.logError("processPost caught error: ", e);
+            return returnError(HttpStatus.BAD_REQUEST);
+        } catch (ExecutionException | InterruptedException e) {
+            Logger.logError("processPost caught error: ", e);
+            return returnError(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private BaseEntity validateRequestBody(String requestBody) throws JsonMappingException, JsonProcessingException {
+        if (requestBody == null || requestBody.isEmpty()) {
+            throw new ClassCastException("Invalid data format");
+        }
+
+        JsonNode jsonNode = objectMapper.readTree(requestBody);
+
+        if (!jsonNode.has("description") || !jsonNode.get("description").isTextual() || !jsonNode.has("quantity") || !jsonNode.get("quantity").isInt()) {
+            throw new ClassCastException("Invalid data format");
+        }
+
+        // Convert the JSON node to a BaseEntity object
+        BaseEntity newEntity = objectMapper.treeToValue(jsonNode, BaseEntity.class);
+
+        if (newEntity.getQuantity() < 0) {
+            throw new ClassCastException("Invalid data format");
+        }
+
+        return newEntity;
     }
 
     private APIGatewayProxyResponseEvent processOptions() {
@@ -120,11 +159,6 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
         return response;
     }
 
-    // private APIGatewayProxyResponseEvent processPost(APIGatewayProxyRequestEvent request) {
-    //     String path = request.getPath();
-    //     String message = String.format("hello world! responding to your POST at %s", path);
-    //     return createResponse(200, message);
-    // }
     // private APIGatewayProxyResponseEvent processPut(APIGatewayProxyRequestEvent request) {
     //     String path = request.getPath();
     //     String message = String.format("hello world! responding to your PUT at %s", path);

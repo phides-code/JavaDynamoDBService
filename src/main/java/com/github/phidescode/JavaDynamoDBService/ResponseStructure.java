@@ -25,9 +25,4 @@ public class ResponseStructure {
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
     }
-
-    @Override
-    public String toString() {
-        return "ResponseStructure{data=" + data + ", errorMessage='" + errorMessage + "'}";
-    }
 }
