@@ -16,6 +16,11 @@ public class Entity extends BaseEntity {
         this.id = UUID.randomUUID().toString();
     }
 
+    public Entity(String id, BaseEntity newEntity) {
+        super(newEntity.getDescription(), newEntity.getQuantity());
+        this.id = id;
+    }
+
     public String getId() {
         return id;
     }

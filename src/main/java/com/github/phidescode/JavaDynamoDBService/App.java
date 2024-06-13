@@ -47,11 +47,11 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
 
         return switch (httpMethod) {
             case "GET" ->
-                processGet();
+                processGet(request);
             case "POST" ->
                 processPost(request);
-            // case "PUT" ->
-            //     processPut(request);
+            case "PUT" ->
+                processPut(request);
             case "DELETE" ->
                 processDelete(request);
             case "OPTIONS" ->
@@ -69,7 +69,35 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
         return createResponse(httpStatus, responseContent);
     }
 
-    private APIGatewayProxyResponseEvent processGet() {
+    private APIGatewayProxyResponseEvent processGet(APIGatewayProxyRequestEvent request) {
+        String[] pathSegments = request.getPath().split("/");
+
+        if (pathSegments.length == 3) {
+            String id = pathSegments[2];
+            return processGetById(id);
+        }
+
+        return processGetAll();
+    }
+
+    private APIGatewayProxyResponseEvent processGetById(String id) {
+        try {
+            Entity entity = dbHandler.getEntity(id);
+
+            ResponseStructure responseContent = new ResponseStructure(entity, null);
+            return createResponse(HttpStatus.OK, responseContent);
+        } catch (NoSuchElementException e) {
+            Logger.logError("processGetById caught error: ", e);
+            return returnError(HttpStatus.BAD_REQUEST);
+        } catch (InterruptedException | ExecutionException e) {
+            Logger.logError("processGetById caught error: ", e);
+            return returnError(HttpStatus.INTERNAL_SERVER_ERROR);
+        } finally {
+            dbHandler.closeDbClient();
+        }
+    }
+
+    private APIGatewayProxyResponseEvent processGetAll() {
         try {
             List<Entity> entities = dbHandler.listEntities();
 
@@ -77,7 +105,7 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
 
             return createResponse(HttpStatus.OK, responseContent);
         } catch (InterruptedException | ExecutionException e) {
-            Logger.logError("Error during DynamoDB scan: ", e);
+            Logger.logError("processGetAll caught error: ", e);
             return returnError(HttpStatus.INTERNAL_SERVER_ERROR);
         } finally {
             dbHandler.closeDbClient();
@@ -89,6 +117,7 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
             String requestBody = request.getBody();
             BaseEntity newEntity = validateRequestBody(requestBody);
             Entity entity = dbHandler.putEntity(newEntity);
+
             ResponseStructure responseContent = new ResponseStructure(entity, null);
 
             return createResponse(HttpStatus.OK, responseContent);
@@ -103,12 +132,34 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
         }
     }
 
-    private APIGatewayProxyResponseEvent processDelete(APIGatewayProxyRequestEvent request) {
-
-        String[] pathSegments = request.getPath().split("/");
-        String id = pathSegments[2];
-
+    private APIGatewayProxyResponseEvent processPut(APIGatewayProxyRequestEvent request) {
         try {
+            String[] pathSegments = request.getPath().split("/");
+            String id = pathSegments[2];
+
+            String requestBody = request.getBody();
+            BaseEntity updatedEntity = validateRequestBody(requestBody);
+
+            dbHandler.updateEntity(id, updatedEntity);
+
+            ResponseStructure responseContent = new ResponseStructure(new Entity(id, updatedEntity), null);
+
+            return createResponse(HttpStatus.OK, responseContent);
+        } catch (ClassCastException | JsonProcessingException | NoSuchElementException e) {
+            Logger.logError("processPost caught error: ", e);
+            return returnError(HttpStatus.BAD_REQUEST);
+        } catch (ExecutionException | InterruptedException e) {
+            Logger.logError("processPost caught error: ", e);
+            return returnError(HttpStatus.INTERNAL_SERVER_ERROR);
+        } finally {
+            dbHandler.closeDbClient();
+        }
+    }
+
+    private APIGatewayProxyResponseEvent processDelete(APIGatewayProxyRequestEvent request) {
+        try {
+            String[] pathSegments = request.getPath().split("/");
+            String id = pathSegments[2];
             dbHandler.deleteEntity(id);
             ResponseStructure responseContent = new ResponseStructure("OK", null);
             return createResponse(HttpStatus.OK, responseContent);
@@ -184,10 +235,4 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
 
         return response;
     }
-
-    // private APIGatewayProxyResponseEvent processPut(APIGatewayProxyRequestEvent request) {
-    //     String path = request.getPath();
-    //     String message = String.format("hello world! responding to your PUT at %s", path);
-    //     return createResponse(200, message);
-    // }
 }
