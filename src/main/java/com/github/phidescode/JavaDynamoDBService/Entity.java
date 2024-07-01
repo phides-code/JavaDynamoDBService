@@ -6,18 +6,13 @@ public class Entity extends BaseEntity {
 
     private String id;
 
-    public Entity(String id, String description, int quantity) {
-        super(description, quantity);
-        this.id = id;
-    }
-
     public Entity(BaseEntity newEntity) {
-        super(newEntity.getDescription(), newEntity.getQuantity());
+        super(newEntity);
         this.id = UUID.randomUUID().toString();
     }
 
     public Entity(String id, BaseEntity newEntity) {
-        super(newEntity.getDescription(), newEntity.getQuantity());
+        super(newEntity);
         this.id = id;
     }
 

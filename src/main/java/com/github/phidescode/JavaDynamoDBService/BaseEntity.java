@@ -9,6 +9,12 @@ public class BaseEntity {
     public BaseEntity() {
     }
 
+    // this constructor exists so that we can call super(newEntity); in the Entity class 
+    public BaseEntity(BaseEntity newBaseEntity) {
+        this.description = newBaseEntity.getDescription();
+        this.quantity = newBaseEntity.getQuantity();
+    }
+
     public BaseEntity(String description, int quantity) {
         this.description = description;
         this.quantity = quantity;

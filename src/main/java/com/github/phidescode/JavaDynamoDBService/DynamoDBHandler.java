@@ -141,7 +141,7 @@ public class DynamoDBHandler {
         String description = item.get("description").s();
         int quantity = Integer.parseInt(item.get("quantity").n());
 
-        return new Entity(id, description, quantity);
+        return new Entity(id, new BaseEntity(description, quantity));
     }
 
     private HashMap<String, AttributeValueUpdate> getUpdatedValues(BaseEntity entity) {
