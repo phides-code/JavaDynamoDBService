@@ -13,8 +13,6 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -28,7 +26,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
     private static HashMap<String, String> headers;
-    private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String ORIGIN_URL = "http://localhost:3000";
     private static final DynamoDBHandler dbHandler = new DynamoDBHandler();
 
@@ -115,7 +112,7 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
     private APIGatewayProxyResponseEvent processPost(APIGatewayProxyRequestEvent request) {
         try {
             String requestBody = request.getBody();
-            BaseEntity newEntity = validateRequestBody(requestBody);
+            BaseEntity newEntity = EntityUtils.validateRequestBody(requestBody);
             Entity entity = dbHandler.putEntity(newEntity);
 
             ResponseStructure responseContent = new ResponseStructure(entity, null);
@@ -138,7 +135,7 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
             String id = pathSegments[2];
 
             String requestBody = request.getBody();
-            BaseEntity updatedEntity = validateRequestBody(requestBody);
+            BaseEntity updatedEntity = EntityUtils.validateRequestBody(requestBody);
 
             dbHandler.updateEntity(id, updatedEntity);
 
@@ -175,27 +172,6 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
         }
     }
 
-    private BaseEntity validateRequestBody(String requestBody) throws JsonMappingException, JsonProcessingException {
-        if (requestBody == null || requestBody.isEmpty()) {
-            throw new ClassCastException("Invalid data format");
-        }
-
-        JsonNode jsonNode = objectMapper.readTree(requestBody);
-
-        if (!jsonNode.has("description") || !jsonNode.get("description").isTextual() || !jsonNode.has("quantity") || !jsonNode.get("quantity").isInt()) {
-            throw new ClassCastException("Invalid data format");
-        }
-
-        // Convert the JSON node to a BaseEntity object
-        BaseEntity newEntity = objectMapper.treeToValue(jsonNode, BaseEntity.class);
-
-        if (newEntity.getQuantity() < 0) {
-            throw new ClassCastException("Invalid data format");
-        }
-
-        return newEntity;
-    }
-
     private APIGatewayProxyResponseEvent processOptions() {
         headers.put("Access-Control-Allow-Methods", "OPTIONS, POST, GET, PUT, DELETE");
         ResponseStructure responseContent = new ResponseStructure(null, null);
@@ -223,6 +199,8 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
                 responseBody.put("data", null);
                 responseBody.put("errorMessage", responseErrorMessage);
             }
+
+            ObjectMapper objectMapper = new ObjectMapper();
 
             String responseBodyString = objectMapper.writeValueAsString(responseBody);
             response.setBody(responseBodyString);

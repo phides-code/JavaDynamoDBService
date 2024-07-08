@@ -9,7 +9,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeAction;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
@@ -50,7 +49,7 @@ public class DynamoDBHandler {
         List<Map<String, AttributeValue>> items = scanResponse.items();
 
         for (Map<String, AttributeValue> item : items) {
-            entities.add(getEntityFromItem(item));
+            entities.add(EntityUtils.getEntityFromDBItem(item));
         }
 
         return entities;
@@ -76,7 +75,7 @@ public class DynamoDBHandler {
             throw new NoSuchElementException("Item not found with ID: " + id);
         }
 
-        return getEntityFromItem(item);
+        return EntityUtils.getEntityFromDBItem(item);
     }
 
     public Entity putEntity(BaseEntity newEntity) throws InterruptedException, ExecutionException {
@@ -85,7 +84,7 @@ public class DynamoDBHandler {
 
             PutItemRequest newItemRequest = PutItemRequest.builder()
                     .tableName(TABLE_NAME)
-                    .item(getItemValues(entity))
+                    .item(EntityUtils.getItemValues(entity))
                     .build();
 
             CompletableFuture<PutItemResponse> putItemResponseFuture = dynamoDbClient.putItem(newItemRequest);
@@ -105,7 +104,7 @@ public class DynamoDBHandler {
                 .s(id)
                 .build());
 
-        HashMap<String, AttributeValueUpdate> updatedValues = getUpdatedValues(entity);
+        HashMap<String, AttributeValueUpdate> updatedValues = EntityUtils.getUpdatedValues(entity);
         UpdateItemRequest updateItemRequest = UpdateItemRequest.builder()
                 .tableName(TABLE_NAME)
                 .key(itemKey)
@@ -134,51 +133,5 @@ public class DynamoDBHandler {
         if (deleteItemResponse.attributes() == null || deleteItemResponse.attributes().isEmpty()) {
             throw new NoSuchElementException("Item not found with ID: " + id);
         }
-    }
-
-    private Entity getEntityFromItem(Map<String, AttributeValue> item) {
-        String id = item.get("id").s();
-        String description = item.get("description").s();
-        int quantity = Integer.parseInt(item.get("quantity").n());
-
-        return new Entity(id, new BaseEntity(description, quantity));
-    }
-
-    private HashMap<String, AttributeValueUpdate> getUpdatedValues(BaseEntity entity) {
-        HashMap<String, AttributeValueUpdate> updatedValues = new HashMap<>();
-
-        updatedValues.put("description", AttributeValueUpdate.builder()
-                .value(AttributeValue.builder()
-                        .s(entity.getDescription())
-                        .build())
-                .action(AttributeAction.PUT)
-                .build());
-
-        updatedValues.put("quantity", AttributeValueUpdate.builder()
-                .value(AttributeValue.builder()
-                        .n(entity.getQuantity() + "")
-                        .build())
-                .action(AttributeAction.PUT)
-                .build());
-
-        return updatedValues;
-    }
-
-    private HashMap<String, AttributeValue> getItemValues(Entity entity) {
-        HashMap<String, AttributeValue> itemValues = new HashMap<>();
-
-        itemValues.put("id", AttributeValue.builder()
-                .s(entity.getId())
-                .build());
-
-        itemValues.put("description", AttributeValue.builder()
-                .s(entity.getDescription())
-                .build());
-
-        itemValues.put("quantity", AttributeValue.builder()
-                .n(entity.getQuantity() + "")
-                .build());
-
-        return itemValues;
     }
 }
