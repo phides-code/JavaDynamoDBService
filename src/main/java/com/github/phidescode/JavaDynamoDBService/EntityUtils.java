@@ -27,7 +27,6 @@ public class EntityUtils {
             throw new ClassCastException("Invalid data format");
         }
 
-        // Convert the JSON node to a BaseEntity object
         BaseEntity newEntity = objectMapper.treeToValue(jsonNode, BaseEntity.class);
 
         if (newEntity.getQuantity() < 0) {

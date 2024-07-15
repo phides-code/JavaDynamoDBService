@@ -1,45 +1,37 @@
-# App
+# JavaDynamoDBService
 
-This project contains an AWS Lambda maven application with [AWS Java SDK 2.x](https://github.com/aws/aws-sdk-java-v2) dependencies.
+A Java project template providing CRUD services for a DynamoDB table, using AWS Lambda and API Gateway, deployed with AWS SAM and GitHub Actions.
 
-## Prerequisites
-- Java 1.8+
-- Apache Maven
-- [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
-- Docker
+This project is based on the AWS Java SDK for Amazon DynamoDB:
+https://mvnrepository.com/artifact/software.amazon.awssdk/dynamodb
+https://github.com/aws/aws-sdk-java-v2
 
-## Development
+### Requirements
 
-The generated function handler class just returns the input. The configured AWS Java SDK client is created in `DependencyFactory` class and you can 
-add the code to interact with the SDK client based on your use case.
+-   Java 1.8+
+-   Apache Maven
+-   [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
+-   Docker
 
-#### Building the project
-```
-mvn clean install
-```
+### Customize
 
-#### Testing it locally
-```
-sam local invoke
-```
+-   Find and replace `Appname` with the name of the app (upper and lowercase A)
+-   Find and replace `Bean`/`Beans` with the table name (upper and lowercase A)
+-   Find and replace `us-east-1` with the AWS region
+-   Update the class variables and methods in `BaseEntity.java` to suit your table structure
+-   Update the methods in `EntityUtils.java` to suit your table structure and logic.
 
-#### Adding more SDK clients
-To add more service clients, you need to add the specific services modules in `pom.xml` and create the clients in `DependencyFactory` following the same 
-pattern as dynamoDbClient.
+### Deploy manually
 
-## Deployment
+-   `make deploy`
 
-The generated project contains a default [SAM template](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html) file `template.yaml` where you can 
-configure different properties of your lambda function such as memory size and timeout. You might also need to add specific policies to the lambda function
-so that it can access other AWS resources.
+### Run locally
 
-To deploy the application, you can run the following command:
+-   `make build && sam local start-api --port 8000`
 
-```
-sam deploy --guided
-```
+### Setup GitHub actions
 
-See [Deploying Serverless Applications](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-deploying.html) for more info.
+Once the repo is setup on GitHub, add AWS secrets to GitHub Actions for this repo:
 
-
-
+-   `gh secret set AWS_ACCESS_KEY_ID`
+-   `gh secret set AWS_SECRET_ACCESS_KEY`
