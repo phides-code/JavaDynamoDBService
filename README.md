@@ -18,6 +18,7 @@ https://github.com/aws/aws-sdk-java-v2
 -   Find and replace `Appname` with the name of the app (upper and lowercase A)
 -   Find and replace `Bean`/`Beans` with the table name (upper and lowercase A)
 -   Find and replace `us-east-1` with the AWS region
+-   Find and replace/rename JavaDynamoDBService with your class name
 -   Update the class variables and methods in `BaseEntity.java` to suit your table structure
 -   Update the methods in `EntityUtils.java` to suit your table structure and logic.
 
