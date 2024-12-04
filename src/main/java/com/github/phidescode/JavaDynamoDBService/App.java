@@ -55,7 +55,7 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
 
         if (apiKey == null || !secret.equals(apiKey)) {
             Logger.log("Could not authenticate header");
-            return returnError(HttpStatus.BAD_REQUEST);
+            return returnError(HttpStatus.UNAUTHORIZED);
         }
 
         String httpMethod = request.getHttpMethod();
