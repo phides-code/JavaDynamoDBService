@@ -34,7 +34,7 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
     public App() {
         headers = new HashMap<>();
         headers.put("Access-Control-Allow-Origin", ORIGIN_URL);
-        headers.put("Access-Control-Allow-Headers", "Content-Type");
+        headers.put("Access-Control-Allow-Headers", "Content-Type, x-api-key");
     }
 
     @Override
