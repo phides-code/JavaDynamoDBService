@@ -35,11 +35,19 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
         headers = new HashMap<>();
         headers.put("Access-Control-Allow-Origin", ORIGIN_URL);
         headers.put("Access-Control-Allow-Headers", "Content-Type, x-api-key");
+        headers.put("Access-Control-Allow-Methods", "OPTIONS, POST, GET, PUT, DELETE");
     }
 
     @Override
     public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent request, Context context) {
         Logger.setLogger(context.getLogger());
+
+        String httpMethod = request.getHttpMethod();
+        Logger.log("Processing " + httpMethod + " request");
+
+        if ("OPTIONS".equals(httpMethod)) {
+            return processOptions();
+        }
 
         // Extract custom header from the request
         Map<String, String> requestHeaders = request.getHeaders();
@@ -58,9 +66,6 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
             return returnError(HttpStatus.UNAUTHORIZED);
         }
 
-        String httpMethod = request.getHttpMethod();
-        Logger.log("Processing " + httpMethod + " request");
-
         return switch (httpMethod) {
             case "GET" ->
                 processGet(request);
@@ -70,8 +75,6 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
                 processPut(request);
             case "DELETE" ->
                 processDelete(request);
-            case "OPTIONS" ->
-                processOptions();
             default ->
                 returnError(HttpStatus.METHOD_NOT_ALLOWED);
         };
@@ -182,7 +185,6 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
     }
 
     private APIGatewayProxyResponseEvent processOptions() {
-        headers.put("Access-Control-Allow-Methods", "OPTIONS, POST, GET, PUT, DELETE");
         ResponseStructure responseContent = new ResponseStructure(null, null);
 
         return createResponse(HttpStatus.OK, responseContent);
@@ -194,6 +196,7 @@ public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatew
 
         response.setIsBase64Encoded(false);
         response.setStatusCode(httpStatus.value());
+        response.setHeaders(headers);
 
         Map<String, Object> responseBody = new HashMap<>();
 
